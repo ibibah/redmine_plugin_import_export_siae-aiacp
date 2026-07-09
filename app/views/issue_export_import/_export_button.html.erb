@@ -1,0 +1,20 @@
+<%
+  can_export = User.current.allowed_to?(:export_issues_with_attachments, @project, global: @project.nil?)
+  can_import = User.current.admin? || User.current.allowed_to?(:import_issues_from_export, nil, global: true)
+%>
+<% if can_export || can_import %>
+  <div class="issue-export-import-button">
+    <% if can_export %>
+      <%= link_to l(:button_export_with_attachments),
+            export_issues_with_attachments_path(request.query_parameters.merge(project_id: @project)),
+            class: 'icon icon-export',
+            title: l(:button_export_with_attachments) %>
+    <% end %>
+    <% if can_import %>
+      <%= link_to l(:label_issue_export_import_menu),
+            new_issue_export_import_path,
+            class: 'icon icon-import',
+            title: l(:label_issue_export_import_menu) %>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,16 @@
+<h2><%= l(:label_issue_export_import_menu) %></h2>
+
+<% if flash[:error] %>
+  <div class="flash error"><%= flash[:error] %></div>
+<% end %>
+
+<%= form_tag(preview_issue_export_import_path, method: :post, multipart: true) do %>
+  <div class="box tabular">
+    <p>
+      <label for="export_zip"><%= l(:label_import_zip_file) %></label>
+      <%= file_field_tag 'export_zip', accept: '.zip,application/zip' %>
+      <em class="info"><%= l(:text_import_zip_help) %></em>
+    </p>
+  </div>
+  <p><%= submit_tag l(:button_analyze) %></p>
+<% end %>

@@ -1,0 +1,79 @@
+<h2><%= l(:label_import_preview_title) %></h2>
+<p class="info"><%= l(:text_import_preview_help) %></p>
+
+<% if @skipped_rows_count.to_i > 0 %>
+  <div class="flash warning"><%= l(:label_skipped_rows_notice, count: @skipped_rows_count) %></div>
+<% end %>
+
+<% if @forbidden_count.to_i > 0 %>
+  <div class="flash warning"><%= l(:label_forbidden_issues_notice, count: @forbidden_count) %></div>
+<% end %>
+
+<% if @diffs.empty? %>
+  <p class="nodata"><%= l(:label_no_changes) %></p>
+  <%= link_to l(:button_cancel), new_issue_export_import_path %>
+<% else %>
+  <%= form_tag(apply_issue_export_import_path, method: :post) do %>
+    <%= hidden_field_tag :import_token, @import_token %>
+
+    <% @diffs.each do |diff| %>
+      <fieldset class="box">
+        <legend>
+          <%= link_to "##{diff[:id]} #{diff[:subject]}", issue_path(diff[:id]), target: '_blank' %>
+        </legend>
+
+        <% unless diff[:changes].empty? %>
+          <table class="list">
+            <thead>
+              <tr>
+                <th></th>
+                <th><%= l(:label_field) %></th>
+                <th><%= l(:label_old_value) %></th>
+                <th><%= l(:label_new_value) %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% diff[:changes].each do |c| %>
+                <tr>
+                  <td>
+                    <%= check_box_tag "apply_field[#{diff[:id]}][#{c[:field]}]", '1', true %>
+                  </td>
+                  <td><%= c[:header] %></td>
+                  <td><%= c[:old_value] %></td>
+                  <td><strong><%= c[:new_value] %></strong></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% end %>
+
+        <% unless diff[:new_attachments].empty? %>
+          <p><strong><%= l(:label_new_attachments) %></strong></p>
+          <ul>
+            <% diff[:new_attachments].each do |a| %>
+              <li>
+                <%= check_box_tag "apply_attachment[#{diff[:id]}][#{a[:filename]}]", '1', true %>
+                <%= a[:filename] %>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
+
+        <% if diff[:import_note].present? %>
+          <p>
+            <label>
+              <%= check_box_tag "apply_note[#{diff[:id]}]", '1', true %>
+              <strong><%= l(:label_import_note) %></strong>
+            </label>
+          </p>
+          <div class="import-note-preview"><%= simple_format(h(diff[:import_note])) %></div>
+        <% end %>
+      </fieldset>
+    <% end %>
+
+    <p>
+      <%= submit_tag l(:button_apply_import) %>
+      <%= link_to l(:button_cancel), new_issue_export_import_path %>
+    </p>
+  <% end %>
+<% end %>

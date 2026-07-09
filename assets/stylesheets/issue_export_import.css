@@ -1,0 +1,16 @@
+.issue-export-import-button {
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.issue-export-import-button a {
+  margin-right: 8px;
+}
+
+.import-note-preview {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: .6rem .8rem;
+  margin: .3rem 0 1rem 1.6rem;
+}

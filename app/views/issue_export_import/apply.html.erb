@@ -1,0 +1,29 @@
+<h2><%= l(:label_import_result_title) %></h2>
+
+<ul>
+  <% @results.each do |r| %>
+    <li>
+      <% if r[:errors].any? %>
+        <span class="icon icon-error">
+          <%= l(:label_issue_error, id: r[:id], message: r[:errors].join(' | ')) %>
+        </span>
+      <% elsif r[:applied_fields].any? || r[:applied_attachments].any? || r[:note_applied] %>
+        <span class="icon icon-ok">
+          <%= l(:label_issue_updated, id: r[:id], count: r[:applied_fields].size + r[:applied_attachments].size + (r[:note_applied] ? 1 : 0)) %>
+        </span>
+        <ul>
+          <% r[:applied_attachments].each do |name| %>
+            <li><%= l(:label_attachment_added, name: name) %></li>
+          <% end %>
+          <% if r[:note_applied] %>
+            <li><%= l(:label_note_added) %></li>
+          <% end %>
+        </ul>
+      <% else %>
+        <%= l(:label_issue_unchanged, id: r[:id]) %>
+      <% end %>
+    </li>
+  <% end %>
+</ul>
+
+<p><%= link_to l(:button_cancel), new_issue_export_import_path %></p>
