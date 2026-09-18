@@ -4,401 +4,364 @@
 <meta charset="utf-8">
 <title>Export de demandes Redmine</title>
 <style>
-  /* ======================================================================
-     STYLE NOIR ET BLANC PROCHE DU PDF REDMINE
-     ====================================================================== */
-  
-  :root {
-    --text-color: #000000;
-    --border-color: #cccccc;
-    --light-gray: #f5f5f5;
-    --medium-gray: #e0e0e0;
-    --dark-gray: #666666;
-    --header-bg: #ffffff;
-    --table-header-bg: #f0f0f0;
-  }
-
+  /* ================================================================
+     STYLE ÉPURÉ PROCHE DU PDF REDMINE - Refonte 2026-09
+     Inspiré de issues.pdf (liste) et test2-1.pdf (fiche)
+     ================================================================ */
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  
   body {
-    font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
-    color: var(--text-color);
+    font-family: "Helvetica Neue", Helvetica, Arial, "DejaVu Sans", sans-serif;
+    color: #000;
     margin: 0;
     padding: 0;
-    line-height: 1.4;
-    font-size: 12pt;
-    background: var(--header-bg);
+    line-height: 1.45;
+    font-size: 9pt;
+    background: #fff;
     orphans: 3;
     widows: 3;
   }
+  a { color: #000; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .muted { color: #666; }
 
-  a { color: var(--text-color); text-decoration: underline; }
-  .muted { color: var(--dark-gray); font-size: .9em; }
-
-  /* -- Barre supérieure (écran uniquement) -- */
+  /* Barre écran uniquement */
   .topbar {
     position: sticky;
     top: 0;
     z-index: 100;
-    background: var(--text-color);
-    color: var(--header-bg);
-    padding: 8px 16px;
+    background: #222;
+    color: #fff;
+    padding: 6px 14px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    font-size: 14px;
+    gap: 10px;
+    font-size: 11px;
+    border-bottom: 1px solid #000;
   }
-  
-  .topbar .topbar-title {
-    font-weight: bold;
-    margin-right: auto;
-  }
-  
+  .topbar .topbar-title { font-weight: 600; margin-right: auto; letter-spacing: .2px; }
   .topbar a, .topbar button {
-    color: var(--header-bg);
+    color: #fff;
     text-decoration: none;
-    font-size: 13px;
-    background: var(--dark-gray);
-    border: 1px solid var(--medium-gray);
+    font-size: 11px;
+    background: #444;
+    border: 1px solid #666;
     border-radius: 3px;
-    padding: 6px 12px;
+    padding: 4px 10px;
     cursor: pointer;
   }
-  
-  .topbar a:hover, .topbar button:hover {
-    background: var(--medium-gray);
-  }
+  .topbar a:hover, .topbar button:hover { background: #555; }
 
-  .wrap { max-width: 100%; margin: 0 auto; padding: 20px 25px 50px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 14px 18px 40px; }
 
+  /* En-tête rapport */
   .report-header {
-    margin-bottom: 24px;
-    border-bottom: 2px solid var(--text-color);
-    padding-bottom: 16px;
     text-align: center;
+    border-bottom: 1.4pt solid #000;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
   }
-  
   .report-header h1 {
-    font-size: 18pt;
-    font-weight: bold;
-    margin: 0 0 8px 0;
-    color: var(--text-color);
+    font-size: 14pt;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    letter-spacing: .1px;
   }
-  
-  .report-header p {
-    font-size: 11pt;
-    color: var(--dark-gray);
+  .report-header .subtitle {
+    font-size: 8.5pt;
+    color: #444;
     margin: 0;
   }
 
-  /* -- Sommaire -- */
-  .toc { margin-bottom: 30px; }
+  /* Bloc infos requête - style PDF */
+  .query-info {
+    border: 0.5pt solid #bbb;
+    background: #fafafa;
+    padding: 7px 10px;
+    margin-bottom: 14px;
+    font-size: 7.8pt;
+    line-height: 1.4;
+    color: #222;
+  }
+  .query-info .row { display: flex; flex-wrap: wrap; gap: 14px; }
+  .query-info .item { white-space: nowrap; }
+  .query-info strong { font-weight: 700; }
+  .query-info .filters { margin-top: 4px; word-break: break-word; white-space: normal; }
+
+  /* Sommaire */
+  .toc { margin-bottom: 18px; }
   .toc h2 {
-    font-size: 14pt;
-    font-weight: bold;
-    border-bottom: 1px solid var(--text-color);
-    padding-bottom: 6px;
-    margin-bottom: 12px;
-    color: var(--text-color);
-  }
-  
-  .toc h3 {
-    font-size: 12pt;
-    font-weight: bold;
-    color: var(--text-color);
-    background: var(--light-gray);
-    display: block;
-    padding: 4px 8px;
-    margin: 14px 0 8px 0;
-    border-left: 3px solid var(--text-color);
-  }
-  
-  .toc h3 .count {
-    font-weight: normal;
-    color: var(--dark-gray);
-  }
-  
-  .toc ul { list-style: none; margin: 0; padding: 0; }
-  .toc li {
-    padding: 4px 6px;
-    border-bottom: 1px dotted var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
     font-size: 11pt;
-  }
-  
-  .toc li a {
-    color: var(--text-color);
-    text-decoration: none;
-  }
-  
-  .toc li a:hover {
-    text-decoration: underline;
-  }
-
-  /* -- Sections de demande -- */
-  .issue-section {
-    border-top: 2px solid var(--text-color);
-    padding-top: 18px;
-    margin-top: 24px;
-  }
-  .issue-section:first-of-type { margin-top: 0; }
-
-  h2.title {
-    font-size: 14pt;
-    font-weight: bold;
+    font-weight: 700;
+    border-bottom: 0.9pt solid #000;
+    padding-bottom: 3px;
     margin: 0 0 8px 0;
-    color: var(--text-color);
   }
-  
-  h2.title .tracker {
-    color: var(--dark-gray);
-    font-weight: normal;
-    font-size: 13pt;
+  .toc .meta {
+    font-size: 7.8pt;
+    color: #555;
+    margin-bottom: 8px;
   }
-
-  .byline {
-    color: var(--dark-gray);
-    font-size: 10pt;
-    margin: 6px 0 14px 0;
-  }
-  
-  .byline strong {
-    color: var(--text-color);
-  }
-
-  /* -- Attributs sous forme de tableau -- */
-  .attributes {
+  .toc table.issues-toc {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 18px;
-    font-size: 11pt;
+    font-size: 7.8pt;
+    table-layout: auto;
   }
-  
-  .attributes th {
+  .toc table.issues-toc th {
+    background: #eeeeee;
+    border: 0.5pt solid #999;
+    padding: 3px 5px;
     text-align: left;
-    padding: 6px 10px;
-    background: var(--table-header-bg);
-    border: 1px solid var(--border-color);
-    font-weight: bold;
-    color: var(--text-color);
+    font-weight: 700;
     white-space: nowrap;
   }
-  
-  .attributes td {
-    padding: 6px 10px;
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
+  .toc table.issues-toc td {
+    border: 0.5pt solid #bbb;
+    padding: 3px 5px;
+    vertical-align: top;
   }
-  
-  .attributes tr:nth-child(even) td {
-    background: var(--light-gray);
+  .toc table.issues-toc tr:nth-child(even) td { background: #f9f9f9; }
+  .toc table.issues-toc tr:hover td { background: #f0f0f0; }
+  .toc table.issues-toc tr.group-header td {
+    background: #d5d5d5;
+    font-weight: 700;
+    border: 0.5pt solid #999;
+    padding: 4px 6px;
+  }
+  .toc table.issues-toc a { text-decoration: underline; }
+  .sort-indicator { font-size: 7pt; margin-left: 2px; }
+
+  /* Sections demandes - style fiche PDF */
+  .issue-section {
+    border-top: 1.2pt solid #000;
+    padding-top: 10px;
+    margin-top: 20px;
+    page-break-inside: avoid;
+  }
+  .issue-section:first-of-type { margin-top: 10px; }
+
+  h2.title {
+    font-size: 11pt;
+    font-weight: 700;
+    margin: 0 0 3px 0;
+    line-height: 1.3;
+  }
+  h2.title .tracker {
+    font-weight: 400;
+    color: #444;
+    font-size: 10pt;
+  }
+  .byline {
+    color: #555;
+    font-size: 7.5pt;
+    margin: 0 0 8px 0;
+  }
+  .byline strong { color: #000; }
+
+  /* Attributs - 2 colonnes comme PDF */
+  table.attributes {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    font-size: 8.2pt;
+  }
+  table.attributes th {
+    text-align: left;
+    padding: 3px 5px;
+    background: #f0f0f0;
+    border: 0.5pt solid #bbb;
+    font-weight: 600;
+    white-space: nowrap;
+    width: 15%;
+  }
+  table.attributes td {
+    padding: 3px 5px;
+    border: 0.5pt solid #bbb;
+    width: 35%;
+    vertical-align: top;
   }
 
-  /* -- Fieldsets -- */
-  fieldset {
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    margin: 0 0 18px 0;
+  /* Sections génériques */
+  .section { margin-bottom: 12px; }
+  .section h3 {
+    font-size: 9.5pt;
+    font-weight: 700;
+    border-bottom: 0.7pt solid #000;
+    padding-bottom: 2px;
+    margin: 0 0 6px 0;
+  }
+  .section .wiki {
+    font-size: 8.8pt;
+    line-height: 1.45;
     padding: 0;
   }
-  
-  legend {
-    font-weight: bold;
-    font-size: 12pt;
-    padding: 0 8px;
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    border-bottom: none;
-  }
-
-  /* -- Relations -- */
-  .relations ul { margin: 6px 0 12px 20px; padding: 0; }
-  .relations p { margin: 6px 0; font-size: 11pt; }
-  .issue-ref-outside { color: var(--dark-gray); }
-  .issue-ref-outside em { font-style: italic; font-size: 10pt; }
-
-  /* -- Contenu Wiki -- */
-  .wiki {
-    padding: 12px 14px;
-    font-size: 11pt;
-    line-height: 1.5;
-  }
-  
+  .wiki p { margin: 5px 0; }
   .wiki p:first-child { margin-top: 0; }
-  .wiki p:last-child { margin-bottom: 0; }
-  .wiki ul, .wiki ol { padding-left: 20px; margin: 8px 0; }
-  
+  .wiki ul, .wiki ol { padding-left: 18px; margin: 5px 0; }
   .wiki pre, .wiki code {
-    background: var(--light-gray);
-    border: 1px solid var(--border-color);
-    border-radius: 0;
-    padding: 2px 4px;
-    font-size: 10pt;
-    font-family: Consolas, monospace;
-    overflow-x: auto;
+    background: #f5f5f5;
+    border: 0.5pt solid #ccc;
+    padding: 1px 3px;
+    font-size: 7.8pt;
+    font-family: "Courier New", monospace;
   }
-  
-  .wiki pre { padding: 8px 10px; margin: 8px 0; }
-  
+  .wiki pre { padding: 6px 8px; margin: 6px 0; white-space: pre-wrap; word-wrap: break-word; }
   .wiki blockquote {
-    border-left: 3px solid var(--border-color);
-    margin: 8px 0;
-    padding: 4px 0 4px 12px;
-    color: var(--dark-gray);
+    border-left: 2pt solid #bbb;
+    margin: 6px 0;
+    padding: 2px 0 2px 8px;
+    color: #555;
     font-style: italic;
   }
-  
-  .wiki img { max-width: 100%; border: 1px solid var(--border-color); margin: 8px 0; }
-  .wiki table { border-collapse: collapse; width: 100%; margin: 8px 0; }
-  .wiki table th, .wiki table td { border: 1px solid var(--border-color); padding: 6px 8px; }
-  .wiki table th { background: var(--table-header-bg); font-weight: bold; text-align: left; }
-  .wiki table tr:nth-child(even) td { background: var(--light-gray); }
+  .wiki img { max-width: 100%; border: 0.5pt solid #bbb; margin: 6px 0; }
+  .wiki table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 8pt; }
+  .wiki table th, .wiki table td { border: 0.5pt solid #bbb; padding: 3px 5px; }
+  .wiki table th { background: #eee; font-weight: 600; text-align: left; }
 
-  /* -- Pièces jointes -- */
-  .attachments { margin-bottom: 18px; }
+  /* Relations */
+  .relations ul { margin: 3px 0 8px 16px; padding: 0; font-size: 8.2pt; }
+  .relations p { margin: 3px 0; font-size: 8.2pt; }
+  .issue-ref-outside { color: #666; }
+  .issue-ref-outside em { font-style: italic; font-size: 7.5pt; }
+
+  /* Pièces jointes */
   .attachments ul { list-style: none; padding: 0; margin: 0; }
-  .attachments li { padding: 6px 0; border-bottom: 1px dotted var(--border-color); display: flex; align-items: center; gap: 8px; }
-  .attachments .clip { margin-right: 6px; }
-  .attachments .size { color: var(--dark-gray); font-size: 10pt; margin-left: auto; }
+  .attachments li { padding: 3px 0; border-bottom: 0.5pt dotted #bbb; font-size: 8.2pt; display: flex; gap: 6px; }
+  .attachments .size { color: #666; font-size: 7.5pt; margin-left: auto; }
 
-  /* ======================================================================
-     SECTION NOTES (remplace l'historique)
-     ====================================================================== */
-  .notes-section { margin-bottom: 18px; }
-  
-  .note {
-    display: flex;
-    gap: 12px;
-    padding: 12px 0;
-    border-top: 1px solid var(--border-color);
-    font-size: 11pt;
+  /* Journaux / Notes - style PDF épuré */
+  .journal {
+    border-top: 0.5pt dotted #999;
+    padding: 6px 0;
+    font-size: 8.5pt;
+    page-break-inside: avoid;
   }
-  
-  .note:first-child {
-    border-top: none;
-    padding-top: 0;
+  .journal:first-of-type { border-top: none; padding-top: 0; }
+  .journal-header {
+    font-size: 7.8pt;
+    color: #555;
+    margin-bottom: 4px;
   }
-  
-  .note-avatar {
-    flex: 0 0 auto;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    color: var(--header-bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10pt;
-    font-weight: bold;
-    border: 1px solid var(--border-color);
-    background: var(--text-color);
+  .journal-header strong { color: #000; font-weight: 600; }
+  .journal-details {
+    font-size: 7.8pt;
+    color: #333;
+    margin-bottom: 4px;
+    padding-left: 0;
   }
-  
-  .note-body {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-  
-  .note-header {
-    font-size: 10pt;
-    color: var(--dark-gray);
-    margin-bottom: 6px;
-  }
-  
-  .note-header strong {
-    color: var(--text-color);
-  }
-  
-  .note-text {
-    font-size: 11pt;
-  }
+  .journal-details ul { margin: 2px 0 2px 14px; padding: 0; }
+  .journal-notes { font-size: 8.5pt; }
 
-  /* -- Lien retour au sommaire -- */
-  .back-to-toc { font-size: 10pt; margin-top: 12px; text-align: right; }
-  .back-to-toc a { color: var(--text-color); text-decoration: none; }
+  .back-to-toc { font-size: 7.5pt; margin-top: 8px; text-align: right; }
+  .back-to-toc a { color: #444; text-decoration: underline; }
 
-  /* -- Pied de page -- */
   footer.report-footer {
-    margin-top: 30px;
-    font-size: 10pt;
-    color: var(--dark-gray);
-    border-top: 1px solid var(--border-color);
-    padding-top: 12px;
+    margin-top: 20px;
+    font-size: 7pt;
+    color: #666;
+    border-top: 0.5pt solid #bbb;
+    padding-top: 8px;
     text-align: center;
   }
 
-  /* -- Impression / export PDF -- */
   @media print {
     .no-print { display: none !important; }
     html { scroll-behavior: auto; }
-    body { font-size: 11pt; margin: 0; padding: 0; }
-    .wrap { max-width: none; padding: 15px 20px 25px; }
-    a { color: inherit; text-decoration: none; }
+    body { font-size: 8.5pt; }
+    .wrap { max-width: none; padding: 0; }
+    a { color: #000; text-decoration: none; }
     .toc { page-break-after: always; }
-    .issue-section {
-      border-top: 1px solid #999;
-      page-break-before: always;
-    }
+    .issue-section { border-top: 1pt solid #000; page-break-before: always; }
     .issue-section:first-of-type { page-break-before: auto; }
-    fieldset { break-inside: avoid; }
-    .note { break-inside: avoid; }
-    .attributes { page-break-inside: avoid; }
-    
-    @page {
-      size: A4;
-      margin: 20mm;
-      
-      @bottom-center {
-        content: counter(page) "/ " counter(pages);
-        font-size: 10pt;
-        color: var(--dark-gray);
-      }
-    }
+    .section, .journal, table.attributes { break-inside: avoid; }
+    @page { size: A4; margin: 14mm 12mm 16mm 12mm; }
   }
 </style>
 </head>
 <body>
   <div class="topbar no-print">
-    <span class="topbar-title">Export de demandes Redmine</span>
-    <a href="#toc">&uarr; Sommaire</a>
+    <span class="topbar-title">Export Redmine — <%= issues.size %> demandes</span>
+    <a href="#toc">↑ Sommaire</a>
     <button type="button" onclick="window.print()">Imprimer / PDF</button>
+    <span style="margin-left:auto; opacity:.7;">Tri: <%= sort_criteria_to_s(query) %></span>
   </div>
 
   <div class="wrap">
     <header class="report-header">
-      <h1>Export de demandes</h1>
-      <p><%= issues.size %> demande(s) &mdash; g&eacute;n&eacute;r&eacute; le <%= format_time(Time.current) %>.<br>
-      Les notes marqu&eacute;es priv&eacute;es dans Redmine ne sont pas incluses.</p>
+      <h1><%= query.project ? query.project.name : 'Toutes les demandes' %> — Export</h1>
+      <p class="subtitle">
+        <%= issues.size %> demande(s) — généré le <%= format_time(Time.current) %> par <%= User.current %>
+        <% if query.respond_to?(:name) && query.name.present? && query.name != '_' %> — Requête: <%= query.name %><% end %><br>
+        Les notes privées ne sont pas incluses. Pièces jointes dans les dossiers ../&lt;id&gt;/ — Rapport autonome.
+      </p>
     </header>
 
-    <nav class="toc" id="toc">
-      <h2>Sommaire</h2>
-      <% if groups %>
-        <% groups.each do |label, group_issues| %>
-          <h3><%= label %> <span class="count">(<%= group_issues.size %>)</span></h3>
-          <ul>
-            <% group_issues.each do |issue| %>
-              <li>
-                <a href="#issue-<%= issue.id %>">#<%= issue.id %> &mdash; <%= issue.subject %></a>
-                <span class="muted"><%= issue.status&.name %></span>
-              </li>
-            <% end %>
-          </ul>
+    <%# Bloc infos requête : filtres, tri, groupement, colonnes %>
+    <div class="query-info">
+      <div class="row">
+        <span class="item"><strong>Projet:</strong> <%= query.project ? query.project.name : 'Tous' %></span>
+        <span class="item"><strong>Tri:</strong> <%= sort_criteria_to_s(query).presence || 'par défaut (ID desc)' %></span>
+        <% if query.respond_to?(:grouped?) && query.grouped? %>
+          <span class="item"><strong>Groupé par:</strong> <%= column_caption(query.group_by_column) %></span>
         <% end %>
-      <% else %>
-        <ul>
-          <% issues.each do |issue| %>
-            <li>
-              <a href="#issue-<%= issue.id %>">#<%= issue.id %> &mdash; <%= issue.subject %></a>
-              <span class="muted"><%= issue.status&.name %></span>
-            </li>
-          <% end %>
-        </ul>
+        <span class="item"><strong>Colonnes:</strong> <%= export_columns.map { |c| column_caption(c) }.join(', ') %></span>
+      </div>
+      <% if query.filters.present? %>
+        <div class="filters"><strong>Filtres:</strong> <%= filters_to_s(query) %></div>
       <% end %>
+    </div>
+
+    <%# SOMMAIRE TABLEAU - reprend champs et tri de la requête %>
+    <nav class="toc" id="toc">
+      <h2>Sommaire — Liste des demandes (<%= issues.size %>)</h2>
+      <div class="meta">
+        Ordre identique à l'écran au moment de l'export (<%= sort_criteria_to_s(query).presence || 'ID' %>)
+        <% if groups %> — Groupé par <%= column_caption(query.group_by_column) %><% end %>
+        — Cliquez sur un # pour aller à la fiche.
+      </div>
+
+      <table class="issues-toc">
+        <thead>
+          <tr>
+            <th style="width: 40px;">#</th>
+            <% export_columns.each do |col| %>
+              <%
+                is_sorted = sort_criteria.any? { |f, _| f.to_s == col.name.to_s }
+                order = sort_criteria.detect { |f, _| f.to_s == col.name.to_s }&.last
+              %>
+              <th>
+                <%= column_caption(col) %>
+                <% if is_sorted %><span class="sort-indicator"><%= order == 'desc' ? '▼' : '▲' %></span><% end %>
+              </th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% if groups %>
+            <% groups.each do |label, group_issues| %>
+              <tr class="group-header"><td colspan="<%= 1 + export_columns.size %>"><%= label %> — <%= group_issues.size %> demande(s)</td></tr>
+              <% group_issues.each do |issue| %>
+                <tr>
+                  <td><a href="#issue-<%= issue.id %>">#<%= issue.id %></a></td>
+                  <% export_columns.each do |col| %>
+                    <td><%= column_display_value(issue, col) %></td>
+                  <% end %>
+                </tr>
+              <% end %>
+            <% end %>
+          <% else %>
+            <% issues.each do |issue| %>
+              <tr>
+                <td><a href="#issue-<%= issue.id %>">#<%= issue.id %></a></td>
+                <% export_columns.each do |col| %>
+                  <td><%= column_display_value(issue, col) %></td>
+                <% end %>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
     </nav>
 
     <main>
@@ -415,63 +378,58 @@
             updated_ago = distance_of_time_in_words_to_now(issue.updated_on) rescue nil
           %>
           <p class="byline">
-            Ajout&eacute;e par <strong><%= issue.author&.to_s %></strong>
-            <% if added_ago %>il y a <%= added_ago %><% end %>.
-            <% if updated_ago %>Mise &agrave; jour il y a <%= updated_ago %>.<% end %>
+            Ajoutée par <strong><%= issue.author&.to_s %></strong><% if added_ago %> il y a <%= added_ago %><% end %>.
+            <% if updated_ago %>Mise à jour il y a <%= updated_ago %>.<% end %>
+            <% if issue.project %>Projet: <%= issue.project.name %>.<% end %>
           </p>
 
           <table class="attributes">
             <tr>
               <th>Statut</th><td><%= issue.status&.name %></td>
-              <th>Priorit&eacute;</th><td><%= issue.priority&.name %></td>
+              <th>Priorité</th><td><%= issue.priority&.name %></td>
             </tr>
             <tr>
-              <th>Assign&eacute; &agrave;</th><td><%= issue.assigned_to&.to_s || '-' %></td>
-              <th>Cat&eacute;gorie</th><td><%= issue.category&.name || '-' %></td>
+              <th>Assigné à</th><td><%= issue.assigned_to&.to_s.presence || '-' %></td>
+              <th>Catégorie</th><td><%= issue.category&.name || '-' %></td>
             </tr>
             <tr>
-              <th>D&eacute;but</th><td><%= issue.start_date ? format_date(issue.start_date) : '-' %></td>
-              <th>&Eacute;ch&eacute;ance</th><td><%= issue.due_date ? format_date(issue.due_date) : '-' %></td>
+              <th>Début</th><td><%= issue.start_date ? format_date(issue.start_date) : '-' %></td>
+              <th>Échéance</th><td><%= issue.due_date ? format_date(issue.due_date) : '-' %></td>
             </tr>
             <tr>
               <th>Avancement</th><td><%= issue.done_ratio %>%</td>
               <th>Version cible</th><td><%= issue.fixed_version&.name || '-' %></td>
             </tr>
             <% if issue.visible_custom_field_values.any? %>
-              <% issue.visible_custom_field_values.each_slice(2).with_index do |cfv_pair, index| %>
-                <% if index == 0 %>
-                  <tr>
-                <% else %>
-                  </tr><tr>
-                <% end %>
+              <% issue.visible_custom_field_values.each_slice(2) do |cfv_pair| %>
+                <tr>
                   <th><%= cfv_pair[0].custom_field.name %></th><td><%= cfv_pair[0].value.to_s.presence || '-' %></td>
                   <% if cfv_pair[1] %>
                     <th><%= cfv_pair[1].custom_field.name %></th><td><%= cfv_pair[1].value.to_s.presence || '-' %></td>
+                  <% else %>
+                    <th></th><td></td>
                   <% end %>
+                </tr>
               <% end %>
-              </tr>
             <% end %>
           </table>
 
           <% if issue.parent || issue.children.any? || issue.relations.any? %>
-            <fieldset class="relations">
-              <legend>Relations</legend>
-
+            <div class="section relations">
+              <h3>Relations</h3>
               <% if issue.parent %>
-                <p><strong>Demande parente :</strong> <%= issue_ref_link(issue.parent, report_ids) %></p>
+                <p><strong>Demande parente:</strong> <%= issue_ref_link(issue.parent, report_ids) %></p>
               <% end %>
-
               <% if issue.children.any? %>
-                <p><strong>Sous-t&acirc;ches (<%= issue.children.size %>) :</strong></p>
+                <p><strong>Sous-tâches (<%= issue.children.size %>):</strong></p>
                 <ul>
                   <% issue.children.each do |child| %>
                     <li><%= issue_ref_link(child, report_ids) %> <span class="muted"><%= child.status&.name %></span></li>
                   <% end %>
                 </ul>
               <% end %>
-
               <% if issue.relations.any? %>
-                <p><strong>Demandes li&eacute;es :</strong></p>
+                <p><strong>Demandes liées:</strong></p>
                 <ul>
                   <% issue.relations.each do |relation| %>
                     <% other = relation.other_issue(issue) %>
@@ -480,64 +438,72 @@
                   <% end %>
                 </ul>
               <% end %>
-            </fieldset>
+            </div>
           <% end %>
 
-          <fieldset>
-            <legend>Description</legend>
+          <div class="section">
+            <h3>Description</h3>
             <div class="wiki">
               <%= localize_attachment_links(textilizable(issue, :description, attachments: issue.attachments), issue) %>
             </div>
-          </fieldset>
+          </div>
 
           <% if issue.attachments.any? %>
-            <fieldset class="attachments">
-              <legend>Pi&egrave;ces jointes (<%= issue.attachments.size %>)</legend>
+            <div class="section attachments">
+              <h3>Pièces jointes (<%= issue.attachments.size %>)</h3>
               <ul>
                 <% issue.attachments.each do |a| %>
                   <li>
-                    <span class="clip">&#128206;</span>
+                    <span>📎</span>
                     <a href="../<%= issue.id %>/<%= a.filename %>"><%= a.filename %></a>
                     <span class="size">(<%= number_to_human_size(a.filesize) %>)</span>
                   </li>
                 <% end %>
               </ul>
-            </fieldset>
+            </div>
           <% end %>
 
-          <%# Filtrer uniquement les journaux avec des notes publiques (non privées) %>
-          <% public_notes = journals.select { |j| j.notes.present? && !j.private_notes? } %>
-          
-          <% if public_notes.any? %>
-            <fieldset class="notes-section">
-              <legend>Notes (<%= public_notes.size %>)</legend>
-              <% public_notes.each do |journal| %>
-                <%
-                  name = journal.user&.to_s || 'Utilisateur supprim&eacute;'
-                  initials = name.split(/\s+/).map { |w| w[0] }.first(2).join.upcase
-                %>
-                <div class="note">
-                  <div class="note-avatar"><%= initials %></div>
-                  <div class="note-body">
-                    <div class="note-header">
-                      <strong><%= name %></strong> &mdash; <%= format_time(journal.created_on) %>
+          <%# Notes publiques + détails des changements comme dans le PDF Redmine %>
+          <% if journals.any? { |j| j.notes.present? || j.details.any? } %>
+            <div class="section">
+              <h3>Historique — Notes (<%= journals.count { |j| j.notes.present? && !j.private_notes? } %>)</h3>
+              <% journals.each do |journal| %>
+                <% next if journal.notes.blank? && journal.details.empty? %>
+                <% next if journal.private_notes? && journal.notes.present? %>
+                <div class="journal">
+                  <div class="journal-header">
+                    Mis à jour par <strong><%= journal.user&.to_s || 'Utilisateur supprimé' %></strong>
+                    le <%= format_time(journal.created_on) %>
+                    <% if journal.private_notes? %><em>(privée - exclue)</em><% end %>
+                  </div>
+                  <% if journal.details.any? %>
+                    <div class="journal-details">
+                      <ul>
+                        <% details_to_strings(journal.details).each do |s| %>
+                          <li><%= s %></li>
+                        <% end %>
+                      </ul>
                     </div>
-                    <div class="note-text wiki">
+                  <% end %>
+                  <% if journal.notes.present? && !journal.private_notes? %>
+                    <div class="journal-notes wiki">
                       <%= localize_attachment_links(textilizable(journal, :notes, attachments: issue.attachments), issue) %>
                     </div>
-                  </div>
+                  <% end %>
                 </div>
               <% end %>
-            </fieldset>
+            </div>
           <% end %>
 
-          <p class="back-to-toc no-print"><a href="#toc">&uarr; Retour au sommaire</a></p>
+          <p class="back-to-toc no-print"><a href="#toc">↑ Retour au sommaire</a></p>
         </section>
       <% end %>
     </main>
 
     <footer class="report-footer">
-      Export g&eacute;n&eacute;r&eacute; le <%= format_time(Time.current) %> par le plugin d'export/import des demandes.
+      Export généré le <%= format_time(Time.current) %> par <%= User.current %> — Plugin export/import demandes.<br>
+      <%= issues.size %> demande(s), tri: <%= sort_criteria_to_s(query).presence || 'défaut' %>, colonnes: <%= export_columns.map { |c| column_caption(c) }.join(', ') %><br>
+      Archive: pièces jointes dans ../&lt;id&gt;/ — Rapport autonome sans connexion requise.
     </footer>
   </div>
 </body>
