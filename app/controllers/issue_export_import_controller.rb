@@ -12,7 +12,9 @@ class IssueExportImportController < ApplicationController
   # déclare explicitement. ApplicationHelper (textilizable, format_time,
   # etc.) est disponible par héritage normal de ApplicationController.
   helper :issues
-  helper_method :localize_attachment_links, :issue_ref_link
+  helper_method :localize_attachment_links, :issue_ref_link,
+                :column_caption, :column_display_value,
+                :sort_criteria_to_s, :filters_to_s
 
   before_action :find_optional_project, only: [:export]
   before_action :authorize_export, only: [:export]
@@ -72,12 +74,16 @@ class IssueExportImportController < ApplicationController
       return
     end
 
-    issues = @query.issues(order: "#{Issue.table_name}.id ASC")
+    # Respecte le tri défini dans la requête (sort_criteria) — IssueQuery#issues
+    # applique déjà group_by_sort_order + sort_clause + id DESC par défaut.
+    # On ne force plus id ASC pour que le sommaire du rapport reflète bien
+    # l'ordre affiché à l'écran au moment de l'export.
+    issues = @query.issues
     export_columns = build_export_columns(@query)
 
     zip_data =
       begin
-        build_export_zip(issues, export_columns)
+        build_export_zip(issues, export_columns, @query)
       rescue StandardError => e
         Rails.logger.error("[redmine_issue_export_import] export error: #{e.message}\n#{e.backtrace.join("\n")}")
         flash[:error] = l(:error_export_failed, message: e.message)
@@ -367,12 +373,13 @@ class IssueExportImportController < ApplicationController
   # (auto-nettoyé), CSV + pièces jointes, compression, puis lecture des
   # octets avant suppression des fichiers temporaires (aucun fichier ne
   # reste sur le disque du serveur après l'appel).
-  def build_export_zip(issues, columns)
+  def build_export_zip(issues, columns, query = nil)
+    query ||= @query
     zip_bytes = nil
     Dir.mktmpdir('issue_export_import_') do |work_dir|
       write_csv(File.join(work_dir, 'issues.csv'), issues, columns)
       copy_attachments(issues, work_dir)
-      build_report(work_dir, issues, @query)
+      build_report(work_dir, issues, query, columns)
 
       zip_tmp = Tempfile.new(['issue_export_import_', '.zip'])
       zip_tmp.close
@@ -398,13 +405,15 @@ class IssueExportImportController < ApplicationController
   # dans l'interface. Les notes marquées "privées" sont systématiquement
   # exclues, ce rapport étant destiné à pouvoir être transmis à des
   # personnes externes.
-  def build_report(work_dir, issues, query)
+  def build_report(work_dir, issues, query, columns = nil)
     report_dir = File.join(work_dir, 'rapport')
     FileUtils.mkdir_p(report_dir)
 
     report_ids = issues.map(&:id)
     journals_by_issue_id = {}
     issues.each { |i| journals_by_issue_id[i.id] = visible_journals_for(i) }
+
+    export_columns = columns || build_export_columns(query)
 
     File.write(
       File.join(report_dir, 'rapport.html'),
@@ -413,10 +422,62 @@ class IssueExportImportController < ApplicationController
                           issues: issues,
                           groups: build_groups(query, issues),
                           report_ids: report_ids,
-                          journals_by_issue_id: journals_by_issue_id
+                          journals_by_issue_id: journals_by_issue_id,
+                          export_columns: export_columns,
+                          query: query,
+                          sort_criteria: query.sort_criteria,
+                          filters: query.filters
                         })
     )
   end
+
+  # Helpers pour le rapport : caption et valeur d'une colonne pour l'affichage HTML
+  def column_caption(column)
+    if column.respond_to?(:caption)
+      # caption peut être un Symbol (ex: :field_status) ou une String
+      c = column.caption
+      c.is_a?(Symbol) ? l(c) : c.to_s
+    elsif column.is_a?(QueryCustomFieldColumn)
+      column.custom_field.name
+    else
+      l(\"field_#{column.name}\", default: column.name.to_s.humanize)
+    end
+  rescue
+    column.name.to_s
+  end
+  helper_method :column_caption
+
+  def column_display_value(issue, column)
+    v = column.value(issue)
+    if v.is_a?(Array)
+      v.map { |e| scalar_to_s(e) }.join(', ')
+    else
+      scalar_to_s(v)
+    end
+  end
+  helper_method :column_display_value
+
+  def sort_criteria_to_s(query)
+    return '' unless query.sort_criteria.present?
+    query.sort_criteria.map do |field, order|
+      col = query.available_columns.detect { |c| c.name.to_s == field.to_s }
+      name = col ? column_caption(col) : field.to_s
+      \"#{name} #{order == 'desc' ? '▼' : '▲'}\"
+    end.join(', ')
+  end
+  helper_method :sort_criteria_to_s
+
+  def filters_to_s(query)
+    return '' unless query.filters.present?
+    query.filters.map do |field, opts|
+      op = opts[:operator]
+      vals = opts[:values]
+      col = query.available_columns.detect { |c| c.name.to_s == field.to_s } || query.available_inline_columns.detect { |c| c.name.to_s == field.to_s }
+      caption = col ? column_caption(col) : field.to_s
+      \"#{caption} #{op} #{vals.join(', ')}\" rescue \"#{field}\"
+    end.join(' | ')
+  end
+  helper_method :filters_to_s
 
   # Regroupement du sommaire du rapport, reflétant le groupement éventuel
   # défini sur la requête ("Group results by" côté Redmine). Retourne nil
