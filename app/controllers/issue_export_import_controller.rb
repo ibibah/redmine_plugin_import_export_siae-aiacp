@@ -440,7 +440,7 @@ class IssueExportImportController < ApplicationController
     elsif column.is_a?(QueryCustomFieldColumn)
       column.custom_field.name
     else
-      l(\"field_#{column.name}\", default: column.name.to_s.humanize)
+      l("field_#{column.name}", default: column.name.to_s.humanize)
     end
   rescue
     column.name.to_s
@@ -462,7 +462,7 @@ class IssueExportImportController < ApplicationController
     query.sort_criteria.map do |field, order|
       col = query.available_columns.detect { |c| c.name.to_s == field.to_s }
       name = col ? column_caption(col) : field.to_s
-      \"#{name} #{order == 'desc' ? '▼' : '▲'}\"
+      "#{name} #{order == 'desc' ? '▼' : '▲'}"
     end.join(', ')
   end
   helper_method :sort_criteria_to_s
@@ -474,7 +474,7 @@ class IssueExportImportController < ApplicationController
       vals = opts[:values]
       col = query.available_columns.detect { |c| c.name.to_s == field.to_s } || query.available_inline_columns.detect { |c| c.name.to_s == field.to_s }
       caption = col ? column_caption(col) : field.to_s
-      \"#{caption} #{op} #{vals.join(', ')}\" rescue \"#{field}\"
+      "#{caption} #{op} #{vals.join(', ')}" rescue "#{field}"
     end.join(' | ')
   end
   helper_method :filters_to_s
