@@ -464,11 +464,20 @@
           <% end %>
 
           <%# Notes publiques + détails des changements comme dans le PDF Redmine %>
-          <% if journals.any? { |j| j.notes.present? || j.details.any? } %>
+          <%
+            # visible_details (et non details) filtre les changements de champs
+            # personnalisés non visibles par l'utilisateur qui exporte — même
+            # comportement que l'onglet "Historique" de Redmine, indispensable
+            # ici puisque le rapport peut être transmis à des personnes
+            # externes. La méthode est ensuite appelée une seule fois par
+            # journal pour éviter de recalculer le filtre.
+          %>
+          <% if journals.any? { |j| j.notes.present? || j.visible_details(User.current).any? } %>
             <div class="section">
               <h3>Historique — Notes (<%= journals.count { |j| j.notes.present? && !j.private_notes? } %>)</h3>
               <% journals.each do |journal| %>
-                <% next if journal.notes.blank? && journal.details.empty? %>
+                <% visible_details = journal.visible_details(User.current) %>
+                <% next if journal.notes.blank? && visible_details.empty? %>
                 <% next if journal.private_notes? && journal.notes.present? %>
                 <div class="journal">
                   <div class="journal-header">
@@ -476,10 +485,10 @@
                     le <%= format_time(journal.created_on) %>
                     <% if journal.private_notes? %><em>(privée - exclue)</em><% end %>
                   </div>
-                  <% if journal.details.any? %>
+                  <% if visible_details.any? %>
                     <div class="journal-details">
                       <ul>
-                        <% details_to_strings(journal.details).each do |s| %>
+                        <% details_to_strings(visible_details).each do |s| %>
                           <li><%= s %></li>
                         <% end %>
                       </ul>

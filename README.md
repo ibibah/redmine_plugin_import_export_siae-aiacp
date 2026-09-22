@@ -1,4 +1,4 @@
-# redmine_issue_export_import
+# redmine_plugin_import_export_siae-aiacp
 
 Plugin Redmine : export d'une requête de demandes (issues) vers une
 archive **.zip téléchargée sur le poste client** (CSV + pièces jointes
@@ -8,6 +8,15 @@ application.
 
 Aucun répertoire serveur à configurer : l'export se télécharge comme
 n'importe quel fichier, l'import se dépose comme n'importe quel upload.
+
+- **Dépôt / dossier d'installation** : `redmine_plugin_import_export_siae-aiacp`
+  (n'importe quel nom de dossier convient, voir « Installation »).
+- **Identifiant interne du plugin** : `redmine_issue_export_import` — il
+  apparaît dans l'URL de configuration
+  (`/settings/plugin/redmine_issue_export_import`) et dans la clé de réglage
+  (`plugin_redmine_issue_export_import`). Seul le **nom du dossier**
+  d'installation est libre ; cet identifiant doit rester inchangé, sans quoi
+  les réglages existants (séparateur CSV) sont perdus.
 
 ## Fonctionnement
 
@@ -94,10 +103,17 @@ export_20260704_143000.zip
 
 ### 2. Import (retour de la modification)
 
-Accessible via **Administration > Import demandes (retour d'export)** pour
-les administrateurs, et via le **menu du projet** (même libellé) pour les
-utilisateurs disposant de la permission **"Importer les demandes depuis un
-export"** sur ce projet (typiquement le rôle Manager).
+Accessible :
+
+- via **Administration > Import demandes (retour d'export)** pour les
+  administrateurs ;
+- via le lien **« Import demandes (retour d'export) »** affiché juste à côté
+  du bouton d'export, sur la page de résultats de requête des demandes
+  (`/issues`), pour les utilisateurs disposant de la permission **« Importer
+  les demandes depuis un export »** sur au moins un projet (typiquement le
+  rôle Manager). Il n'y a volontairement **pas d'entrée dans le menu du
+  projet** : le lien est placé au même endroit que l'export, pour éviter la
+  redondance.
 
 Étapes :
 
@@ -137,8 +153,9 @@ export"** sur ce projet (typiquement le rôle Manager).
 
 ```bash
 cd /path/to/redmine/plugins
-git clone <ce-repo> redmine_issue_export_import
-# ou copier simplement le dossier redmine_issue_export_import ici
+git clone https://github.com/ibibah/redmine_plugin_import_export_siae-aiacp.git \
+          redmine_plugin_import_export_siae-aiacp
+# ou copier simplement le dossier redmine_plugin_import_export_siae-aiacp ici
 
 cd /path/to/redmine
 bundle install   # installe la dépendance rubyzip déclarée dans le Gemfile du plugin
@@ -146,12 +163,32 @@ RAILS_ENV=production bin/rails redmine:plugins:migrate   # aucune migration néc
 sudo service redmine restart   # ou passenger-config restart-app, etc.
 ```
 
-Le plugin ajoute une dépendance : la gem **rubyzip** (`>= 2.3`, pour des
+**Le dossier d'installation peut porter n'importe quel nom** — par convention
+celui du dépôt, `redmine_plugin_import_export_siae-aiacp` (dans l'image
+Docker officielle : `/usr/src/redmine/plugins/redmine_plugin_import_export_siae-aiacp`).
+`init.rb` déclare en effet explicitement son propre répertoire
+(`directory ...`, calculé depuis l'emplacement du fichier `init.rb`) : sans
+cela, Redmine exige un dossier nommé d'après l'identifiant du plugin et
+refuse de démarrer avec :
+
+```
+PluginNotFound: Plugin not found. The directory for plugin
+redmine_issue_export_import should be .../plugins/redmine_issue_export_import.
+```
+
+⚠️ **Une seule copie du plugin dans `plugins/`** : si un ancien dossier
+subsiste (dossier renommé au lieu d'être supprimé, lien symbolique, double
+point de montage Docker…), le plugin est chargé deux fois et `bundle install`
+signale les gems des Gemfiles en double (`Your Gemfile lists the gem rubyzip
+(~> 2.3.0) more than once`). Supprimez l'ancien dossier, puis relancez
+`bundle install` et Redmine.
+
+Le plugin ajoute une dépendance : la gem **rubyzip** (`~> 2.3.0`, pour des
 raisons de sécurité — les versions antérieures sont déconseillées), déclarée
 dans `Gemfile` à la racine du plugin. Redmine charge automatiquement les
 `Gemfile` des plugins lors du `bundle install` à la racine de l'application.
 Selon la source de gems disponible dans votre environnement, la contrainte
-`~> 2.3` peut échouer à résoudre une version précise ; dans ce cas, fixez
+`~> 2.3.0` peut échouer à résoudre une version précise ; dans ce cas, fixez
 une version exacte disponible (ex. `gem 'rubyzip', '2.3.0', require: 'zip'`).
 
 Ensuite, dans **Administration > Plugins > Export / Import des demandes
@@ -247,14 +284,24 @@ Import des demandes avec pièces jointes*), cocher pour les rôles concernés :
   chargée avant les routes des plugins. Ne renommez pas ce chemin vers
   quelque chose commençant par `issues/` sans vérifier qu'il ne recoupe
   aucune route native.
+- **Avertissements `Your Gemfile lists the gem … more than once`** : bénins
+  tant qu'ils sont suivis de `The Gemfile's dependencies are satisfied`. Ils
+  proviennent de la racine de Redmine, qui évalue son `Gemfile` **et** ceux
+  des plugins (`Dir.glob("plugins/*/{Gemfile,PluginGemfile}")`), et le plus
+  souvent de la présence de **deux copies du plugin** dans `plugins/` (ancien
+  dossier + nouveau, lien symbolique, double montage Docker…). Vérifiez qu'il
+  n'en reste qu'une seule.
 - **Compatibilité de version** : ciblé et vérifié pour **Redmine 5.1.x /
-  Ruby 3.0 / Rails 6.1** (ex. Redmine 5.1.17). Le hook `view_issues_index_bottom`
+  Ruby 3.2 / Rails 6.1** (ex. Redmine 5.1.17, image Docker officielle
+  `redmine:5.1`). Le hook `view_issues_index_bottom`
   utilisé pour le bouton d'export a été vérifié directement sur le code
   source de cette branche (`app/views/issues/index.html.erb`, signature
   `:issues, :project, :query` inchangée). Les autres API utilisées
   (`IssueQuery#build_from_params`, `Query#columns`, `Attachment.create`,
-  `custom_field_value` / `custom_field_values=`, `Redmine::MenuManager`)
-  sont stables sur cette branche. L'API `rubyzip` utilisée
+  `custom_field_value` / `custom_field_values=`, `Redmine::MenuManager`,
+  `IssuesHelper#details_to_strings`, `CustomFieldsHelper#format_value`,
+  `Journal#visible_details`) sont stables depuis Redmine 4.2 (vérifiées sur
+  les branches 4.2, 5.0 et 5.1). L'API `rubyzip` utilisée
   (`Zip::File.open`, `zipfile.add`, `entry.extract`) est stable depuis
   plusieurs versions majeures de la gem. **Testez malgré tout sur un
   environnement de recette avant mise en production.**
@@ -280,3 +327,38 @@ Import des demandes avec pièces jointes*), cocher pour les rôles concernés :
 - Le token d'identification du répertoire temporaire d'import est généré
   côté serveur (aléatoire, non prévisible) ; aucun chemin fourni par
   l'utilisateur n'est utilisé tel quel sur le système de fichiers.
+
+## Journal des modifications
+
+### 1.1.0 — 2026-09
+
+- **Correction du bouton « Exporter avec pièces jointes »** : l'export
+  échouait avec
+  `Échec de l'export : undefined method 'format_value' for #<ActionView::Base…>`
+  dès qu'une demande exportée avait un changement de **champ personnalisé**
+  dans son historique. L'historique du rapport HTML est rendu par
+  `IssuesHelper#details_to_strings`, qui appelle `format_value` (défini dans
+  `CustomFieldsHelper`) : c'était le seul helper Redmine utilisé par le
+  rapport qui n'était pas déclaré dans le contrôleur du plugin. Ajout de
+  `helper :custom_fields` (exactement comme `IssuesController`).
+- **Nom du dossier d'installation libre** : `init.rb` déclare désormais
+  explicitement son répertoire (`directory`), ce qui permet d'installer le
+  plugin dans un dossier nommé `redmine_plugin_import_export_siae-aiacp` (ou
+  tout autre nom) sans que Redmine refuse de démarrer
+  (`PluginNotFound: The directory for plugin … should be …`).
+- **Confidentialité de l'historique** : le rapport utilise désormais
+  `Journal#visible_details` au lieu de `Journal#details`, comme l'onglet
+  « Historique » de Redmine. Les changements de champs personnalisés que
+  l'utilisateur qui exporte n'est pas autorisé à voir ne figurent plus dans
+  le rapport — utile puisque ce rapport peut être transmis à des personnes
+  externes (au même titre que les notes privées, déjà exclues).
+- Divers : URL du dépôt renseignée sur la page **Administration > Plugins**
+  (au lieu du `exemple.local` d'origine).
+
+### 1.0.1 — 2026-09
+
+- **Redmine ne démarrait plus** (Puma : `Exiting`) après l'ajout du rapport
+  HTML : trois lignes du contrôleur contenaient un antislash parasite
+  (`\"…\"` au lieu de `"…"`, dans `column_caption`, `sort_criteria_to_s` et
+  `filters_to_s`), ce qui provoquait à l'eager load :
+  `syntax error, unexpected backslash, expecting ')' (SyntaxError)`.
