@@ -6,12 +6,21 @@ require 'securerandom'
 require 'zip' # gem rubyzip, voir le Gemfile du plugin
 
 class IssueExportImportController < ApplicationController
-  # IssuesHelper#details_to_strings (utilisé dans report_issue.html.erb
+  # IssuesHelper#details_to_strings (utilisé dans report.html.erb
   # pour afficher l'historique des champs modifiés) n'est pas inclus par
   # défaut dans le contexte de rendu de ce contrôleur de plugin ; on le
   # déclare explicitement. ApplicationHelper (textilizable, format_time,
   # etc.) est disponible par héritage normal de ApplicationController.
   helper :issues
+
+  # CustomFieldsHelper fournit format_value (et format_object), appelés par
+  # IssuesHelper#show_detail — lui-même utilisé par details_to_strings pour
+  # rendre chaque ligne de l'historique. Sans ce helper, l'export échoue dès
+  # qu'une demande exportée possède un changement de champ personnalisé dans
+  # son historique :
+  #   Échec de l'export : undefined method 'format_value' for #<ActionView::Base...>
+  # IssuesController fait exactement le même appel (helper :custom_fields).
+  helper :custom_fields
   helper_method :localize_attachment_links, :issue_ref_link,
                 :column_caption, :column_display_value,
                 :sort_criteria_to_s, :filters_to_s
