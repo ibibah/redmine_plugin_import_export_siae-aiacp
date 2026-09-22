@@ -2,13 +2,32 @@ require 'redmine'
 
 require_relative 'lib/redmine_issue_export_import/hooks'
 
+# Répertoire réel du plugin, déduit de l'emplacement de ce fichier init.rb.
+# Il permet d'installer le plugin dans un dossier portant n'importe quel nom
+# (par défaut celui du dépôt : redmine_plugin_import_export_siae-aiacp).
+# Sans cette déclaration explicite (voir `directory` ci-dessous), Redmine
+# impose que le dossier soit nommé d'après l'identifiant du plugin et refuse
+# de démarrer sinon, avec une erreur du type :
+#   PluginNotFound: Plugin not found. The directory for plugin
+#   redmine_issue_export_import should be .../plugins/redmine_issue_export_import.
+# File.expand_path est utilisé volontairement à la place de __dir__ : on
+# conserve ainsi le chemin tel qu'il a été chargé par Redmine, ce qui reste
+# correct si le dossier du plugin est un lien symbolique ou un point de
+# montage (cas fréquent avec Docker).
+plugin_directory = File.dirname(File.expand_path(__FILE__))
+
 Redmine::Plugin.register :redmine_issue_export_import do
   name 'Export / Import des demandes avec pièces jointes'
   author 'siae-aiacp'
   description "Exporte le résultat d'une requête de demandes (CSV + pièces jointes classées par numéro de demande) dans un répertoire, et permet de réimporter ce répertoire pour mettre à jour les demandes après vérification des changements."
-  version '1.0.0'
-  url 'https://exemple.local/redmine_issue_export_import'
-  author_url 'https://exemple.local'
+  version '1.1.0'
+  url 'https://github.com/ibibah/redmine_plugin_import_export_siae-aiacp'
+  author_url 'https://github.com/ibibah/redmine_plugin_import_export_siae-aiacp'
+
+  # Le dossier d'installation peut porter n'importe quel nom : on déclare ici
+  # le répertoire effectif du plugin (celui qui contient ce fichier). Voir le
+  # commentaire ci-dessus.
+  directory plugin_directory
 
   requires_redmine version_or_higher: '4.2.0'
 
